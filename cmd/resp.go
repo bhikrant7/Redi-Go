@@ -23,15 +23,15 @@ type Value struct {
 	array []Value
 }
 
-type Resp struct {
+type Resp struct { //the reader structure
 	reader *bufio.Reader
 }
 
-type Writer struct {
+type Writer struct { //the writer struture
 	writer io.Writer
 }
 
-func NewResp(rd io.Reader) *Resp {
+func NewResp(rd io.Reader) *Resp { 
 	return &Resp{reader: bufio.NewReader(rd)}
 }
 
@@ -66,6 +66,7 @@ func (r *Resp) readInteger() (x int, n int, err error) {
 	return int(i64), n, nil
 }
 
+//Deserialization
 func (r *Resp) Read() (Value, error) {
 	_type, err := r.reader.ReadByte()
 
@@ -131,7 +132,7 @@ func (r *Resp) readBulk() (Value, error) {
 	return v, nil
 }
 
-
+//Conversion Resp into value objects
 func (v Value) Marshal() []byte {
 	switch v.typ {
 	case "array":
