@@ -16,11 +16,11 @@ const (
 )
 
 type Value struct {
-	typ   string
-	str   string
-	num   int
-	bulk  string
-	array []Value
+    typ     string
+    str     string
+    bulk    string
+    integer int
+    array   []Value
 }
 
 type Resp struct { //the reader structure
@@ -143,6 +143,10 @@ func (v Value) Marshal() []byte {
 		return v.marshalString();
 	case "null":
 		return v.marshalNull();
+	case "integer":
+		return v.marshalInteger()
+	case "error":
+		return v.marshalError();
 	default:
 		return []byte{}
 	}
@@ -170,13 +174,15 @@ func (v Value) marshalBulk() []byte {
 func (v Value) marshalArray() []byte {
 	var bytes []byte
 	bytes = append(bytes, ARRAY)
-	bytes = append(bytes, (strconv.Itoa(len(v.array)))...)
+	bytes = append(bytes, strconv.Itoa(len(v.array))...)
+	bytes = append(bytes, '\r', '\n') // ADD CRLF after array length
+
 	for i := 0; i < len(v.array); i++ {
-		bytes = append(bytes, v.array[i].Marshal()...)
+		bytes = append(bytes, v.array[i].Marshal()...) // Marshal each element correctly
 	}
+
 	return bytes
 }
-
 func (v Value) marshalError() []byte {
 	var bytes []byte
 	bytes = append(bytes, ERROR)
@@ -188,6 +194,14 @@ func (v Value) marshalError() []byte {
 func (v Value) marshalNull() []byte {
 	var bytes []byte
 	bytes = append(bytes, "$-1\r\n"...)
+	return bytes
+}
+
+func (v Value) marshalInteger() []byte {
+	var bytes []byte
+	bytes = append(bytes, INTEGER)
+	bytes = append(bytes, strconv.Itoa(v.integer)...)
+	bytes = append(bytes, '\r', '\n')
 	return bytes
 }
 
