@@ -258,7 +258,7 @@ func incr(args []Value) Value {
     return Value{typ: "integer", integer: intVal}
 }
 
-//del
+//del karneka
 func del(args []Value) Value {
     if len(args) < 1 {
         return Value{typ: "error", str: "ERR wrong number of arguments for 'del' command"}
