@@ -1,7 +1,7 @@
 'use client'
 
 import { useMoviesStore } from '@/stores/movies'
-import { useEffect } from 'react'
+import { use, useEffect } from 'react'
 
 export default function Home() {
   const { movies, loading, error, fetchMovies } = useMoviesStore()
@@ -10,6 +10,10 @@ export default function Home() {
     console.log('movies: ', movies);
     fetchMovies();
   }, []);
+
+  useEffect(() => {
+    console.log('movies: ', movies);
+  }, [movies]);
   
   return (
     <main className="p-8">
@@ -26,14 +30,14 @@ export default function Home() {
       {error && <p className="text-red-500 mt-4">{error}</p>}
 
       <div className="grid grid-cols-2 gap-4 mt-6">
-        {movies.map((movie) => (
+        {movies?.map((movie) => (
           <div key={movie.id} className="border p-4">
             <img
-              src={movie.poster}
-              alt={movie.title}
+              src={movie.posterPath}
+              alt={movie.originalTitle}
               className="w-full h-40 object-cover"
             />
-            <h2 className="mt-2 font-semibold">{movie.title}</h2>
+            <h2 className="mt-2 font-semibold">{movie.originalTitle}</h2>
           </div>
         ))}
       </div>
