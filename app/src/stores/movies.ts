@@ -2,12 +2,7 @@
 
 // stores/movies.ts
 import { create } from 'zustand'
-
-type Movie = {
-  id: number
-  title: string
-  poster: string
-}
+import { Movie } from '@/types/movies';
 
 type MoviesState = {
   movies: Movie[]
@@ -27,9 +22,25 @@ export const useMoviesStore = create<MoviesState>((set) => ({
       console.log('fetchMovies');
       const res = await fetch('/api/movies/cache')
       const json = await res.json()
-        console.log('json: ', json);
+      console.log('json: ', json);
+      const data = json?.data?.map((movie: any) => {
+        return {
+          id: movie._id,
+          movieId: movie.movie_id,
+          originalTitle: movie.original_title,
+          originalLanguage: movie.original_language,
+          overview: movie.overview,
+          popularity: movie.popularity,
+          posterPath: movie.poster_path,
+          backdropPath: movie.backdrop_path,
+          releaseDate: movie.release_date,
+          voteAverage: movie.vote_average,
+          voteCount: movie.vote_count,
+          adult: movie.adult
+        };
+      })
       if (res.ok) {
-        set({ movies: json.data.data, loading: false })
+        set({ movies: data, loading: false })
       } else {
         set({ error: json.error || 'Failed to load movies', loading: false })
       }
