@@ -16,11 +16,11 @@ const (
 )
 
 type Value struct {
-	typ   string
-	str   string
-	num   int
-	bulk  string
-	array []Value
+    typ     string
+    str     string
+    bulk    string
+    integer int
+    array   []Value
 }
 
 type Resp struct { //the reader structure
