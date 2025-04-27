@@ -12,10 +12,6 @@ export default function Home() {
     console.log('movies: ', movies);
     fetchMovies();
   }, []);
-
-  useEffect(() => {
-    console.log('movies: ', movies);
-  }, [movies]);
   
   return (
     <div className="min-h-screen font-[family-name:var(--font-geist-sans)] bg-gradient-to-b from-[#100719] to-[#1c1a3f] flex items-center justify-center">
