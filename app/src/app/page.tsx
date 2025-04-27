@@ -1,8 +1,18 @@
-import Image from "next/image";
+'use client'
+
+import { useMoviesStore } from '@/stores/movies'
+import { useEffect } from 'react'
 import { Input } from "@/components/ui/input";
 import { Search, SendHorizontal } from "lucide-react";
 
 export default function Home() {
+  const { movies, loading, error, fetchMovies } = useMoviesStore()
+
+  useEffect(() => {
+    console.log('movies: ', movies);
+    fetchMovies();
+  }, []);
+  
   return (
     <div className="min-h-screen font-[family-name:var(--font-geist-sans)] bg-gradient-to-b from-[#100719] to-[#1c1a3f] flex items-center justify-center">
       <main className="flex flex-col items-center justify-center w-full">
