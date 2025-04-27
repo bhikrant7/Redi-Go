@@ -1,6 +1,11 @@
 package main
 
-import "sync"
+import (
+	// "fmt"
+	"strconv"
+	"sync"
+	"time"
+)
 
 
 var Handlers = map[string]func([]Value) Value{
@@ -10,6 +15,12 @@ var Handlers = map[string]func([]Value) Value{
 	"HSET":    hset,
 	"HGET":    hget,
 	"HGETALL": hgetall,
+	"EXISTS":  exists,
+	"TTL":     ttl,
+	"EXPIRE":  expire,
+	"INCR":    incr,
+	"DEL":     del,
+	"HDEL":    hdel,
 }
 
 
@@ -42,23 +53,33 @@ func set(args []Value) Value {
 	return Value{typ: "string", str: "OK"}
 }
 
+
 func get(args []Value) Value {
-	if len(args) != 1 {
-		return Value{typ: "error", str: "ERR wrong number of arguments for 'get' command"}
-	}
+    if len(args) != 1 {
+        return Value{typ: "error", str: "ERR wrong number of arguments for 'get' command"}
+    }
+    key := args[0].bulk
 
-	key := args[0].bulk
+    //expiry dekhne ke liye
+    TTLsMu.RLock()
+    expireAt, ok := TTLs[key]
+    TTLsMu.RUnlock()
+    if ok && time.Now().After(expireAt) {
+        del([]Value{{bulk: key}})  // Auto delete expired key
+        return Value{typ: "null"}
+    }
 
-	SETsMu.RLock()
-	value, ok := SETs[key]
-	SETsMu.RUnlock()
+    // normal way
+    SETsMu.RLock()
+    value, ok := SETs[key]
+    SETsMu.RUnlock()
 
-	if !ok {
-		return Value{typ: "null"}
-	}
-
-	return Value{typ: "bulk", bulk: value}
+    if !ok {
+        return Value{typ: "null"}
+    }
+    return Value{typ: "bulk", bulk: value}
 }
+
 
 // Hsets and Hgets (for hashmaps within hashmap) 
 
@@ -84,6 +105,7 @@ func hset(args []Value) Value {
 	return Value{typ: "string", str: "OK"}
 }
 
+//Value of the key in the hash map
 func hget(args []Value) Value {
 	if len(args) != 2 {
 		return Value{typ: "error", str: "ERR wrong number of arguments for 'hget' command"}
@@ -103,6 +125,7 @@ func hget(args []Value) Value {
 	return Value{typ: "bulk", bulk: value}
 }
 
+//Sab key value pairs milne wala hai
 func hgetall(args []Value) Value {
 	if len(args) != 1 {
 		return Value{typ: "error", str: "ERR wrong number of arguments for 'hgetall' command"}
@@ -119,359 +142,178 @@ func hgetall(args []Value) Value {
 		return Value{typ: "array", array: []Value{}}
 	}
 
-	
+	//bhai sab key-value pairs ko array mein daal deneka
 	var result []Value
 	for field, val := range hmap {
 		result = append(result, Value{typ: "bulk", bulk: field})
 		result = append(result, Value{typ: "bulk", bulk: val})
 	}
+	// fmt.Println("hgetall returning", result) // Debugging line
 
+	
 	return Value{typ: "array", array: result}
 }
 
-// package main
-
-// import (
-// 	"strconv"
-// 	"sync"
-// 	"time"
-// )
-
-// var Handlers = map[string]func([]Value) Value{
-// 	"PING":    ping,
-// 	"SET":     set,
-// 	"GET":     get,
-// 	"DEL":     del,
-// 	"EXISTS":  exists,
-// 	"INCR":    incr,
-// 	"EXPIRE":  expire,
-// 	"TTL":     ttl,
-// 	"HSET":    hset,
-// 	"HGET":    hget,
-// 	"HGETALL": hgetall,
-// }
-
-// var Hashes = map[string]map[string]string{}
-// var HashesMu = sync.RWMutex{}
-
-// // PING
-// func ping(args []Value) Value {
-// 	if len(args) == 0 {
-// 		return Value{typ: "string", str: "PONG"}
-// 	}
-// 	return Value{typ: "string", str: args[0].bulk}
-// }
-
-// // SET / GET
-// var SETs = map[string]string{}
-// var SETsMu = sync.RWMutex{}
-
-// var Expirations = map[string]time.Time{}
-// var ExpMu = sync.RWMutex{}
-
-// func set(args []Value) Value {
-// 	if len(args) != 2 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'set' command"}
-// 	}
-
-// 	key := args[0].bulk
-// 	value := args[1].bulk
-
-// 	SETsMu.Lock()
-// 	SETs[key] = value
-// 	SETsMu.Unlock()
-
-// 	// Remove expiry if re-setting
-// 	ExpMu.Lock()
-// 	delete(Expirations, key)
-// 	ExpMu.Unlock()
-
-// 	return Value{typ: "string", str: "OK"}
-// }
-
-// func get(args []Value) Value {
-// 	if len(args) != 1 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'get' command"}
-// 	}
-
-// 	key := args[0].bulk
-
-// 	// Check for expiry
-// 	ExpMu.RLock()
-// 	exp, hasExp := Expirations[key]
-// 	ExpMu.RUnlock()
-
-// 	if hasExp && time.Now().After(exp) {
-// 		SETsMu.Lock()
-// 		delete(SETs, key)
-// 		SETsMu.Unlock()
-
-// 		ExpMu.Lock()
-// 		delete(Expirations, key)
-// 		ExpMu.Unlock()
-
-// 		return Value{typ: "null"}
-// 	}
-
-// 	SETsMu.RLock()
-// 	value, ok := SETs[key]
-// 	SETsMu.RUnlock()
-
-// 	if !ok {
-// 		return Value{typ: "null"}
-// 	}
-
-// 	return Value{typ: "bulk", bulk: value}
-// }
-
-// // DEL
-// func del(args []Value) Value {
-// 	if len(args) < 1 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'del' command"}
-// 	}
-
-// 	deleted := 0
-
-// 	SETsMu.Lock()
-// 	HashesMu.Lock()
-// 	ExpMu.Lock()
-
-// 	for _, arg := range args {
-// 		key := arg.bulk
-
-// 		// Delete from SETs
-// 		if _, exists := SETs[key]; exists {
-// 			delete(SETs, key)
-// 			deleted++
-// 		}
-
-// 		// Delete from Hashes
-// 		if _, exists := Hashes[key]; exists {
-// 			delete(Hashes, key)
-// 			deleted++
-// 		}
-
-// 		// Delete expiration
-// 		delete(Expirations, key)
-// 	}
-
-// 	ExpMu.Unlock()
-// 	HashesMu.Unlock()
-// 	SETsMu.Unlock()
-
-// 	return Value{typ: "integer", integer: deleted}
-// }
-
-
-// // EXISTS
-// func exists(args []Value) Value {
-// 	if len(args) < 1 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'exists' command"}
-// 	}
-
-// 	count := 0
-// 	now := time.Now()
-
-// 	SETsMu.RLock()
-// 	ExpMu.RLock()
-// 	for _, arg := range args {
-// 		exp, hasExp := Expirations[arg.bulk]
-// 		if (!hasExp || now.Before(exp)) && SETs[arg.bulk] != "" {
-// 			count++
-// 		}
-// 	}
-// 	ExpMu.RUnlock()
-// 	SETsMu.RUnlock()
-
-// 	return Value{typ: "integer", integer: count}
-// }
-
-// // INCR
-// func incr(args []Value) Value {
-// 	if len(args) != 1 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'incr' command"}
-// 	}
-
-// 	key := args[0].bulk
-
-// 	SETsMu.Lock()
-// 	defer SETsMu.Unlock()
-
-// 	valStr, ok := SETs[key]
-// 	if !ok {
-// 		SETs[key] = "1"
-// 		return Value{typ: "integer", integer: 1}
-// 	}
-
-// 	val, err := strconv.Atoi(valStr)
-// 	if err != nil {
-// 		return Value{typ: "error", str: "ERR value is not an integer or out of range"}
-// 	}
-
-// 	val++
-// 	SETs[key] = strconv.Itoa(val)
-
-// 	return Value{typ: "integer", integer: val}
-// }
-
-// // EXPIRE
-// func expire(args []Value) Value {
-// 	if len(args) != 2 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'expire' command"}
-// 	}
-
-// 	key := args[0].bulk
-// 	seconds, err := strconv.Atoi(args[1].bulk)
-// 	if err != nil || seconds < 0 {
-// 		return Value{typ: "error", str: "ERR invalid expire time"}
-// 	}
-
-// 	SETsMu.RLock()
-// 	_, exists := SETs[key]
-// 	SETsMu.RUnlock()
-// 	if !exists {
-// 		return Value{typ: "integer", integer: 0}
-// 	}
-
-// 	ExpMu.Lock()
-// 	Expirations[key] = time.Now().Add(time.Duration(seconds) * time.Second)
-// 	ExpMu.Unlock()
-
-// 	return Value{typ: "integer", integer: 1}
-// }
-
-// // TTL
-// func ttl(args []Value) Value {
-// 	if len(args) != 1 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'ttl' command"}
-// 	}
-
-// 	key := args[0].bulk
-
-// 	ExpMu.RLock()
-// 	exp, exists := Expirations[key]
-// 	ExpMu.RUnlock()
-
-// 	if !exists {
-// 		return Value{typ: "integer", integer: -1}
-// 	}
-
-// 	remaining := int(time.Until(exp).Seconds())
-// 	if remaining < 0 {
-// 		return Value{typ: "integer", integer: -2}
-// 	}
-
-// 	return Value{typ: "integer", integer: remaining}
-// }
-
-// // HSET, HGET, HGETALL
-// var HSETs = map[string]map[string]string{}
-// var HSETsMu = sync.RWMutex{}
-
-// func hset(args []Value) Value {
-// 	if len(args) != 3 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'hset' command"}
-// 	}
-
-// 	hash := args[0].bulk
-// 	key := args[1].bulk
-// 	value := args[2].bulk
-
-// 	HSETsMu.Lock()
-// 	if _, ok := HSETs[hash]; !ok {
-// 		HSETs[hash] = map[string]string{}
-// 	}
-// 	HSETs[hash][key] = value
-// 	HSETsMu.Unlock()
-
-// 	return Value{typ: "string", str: "OK"}
-// }
-
-// func hget(args []Value) Value {
-// 	if len(args) != 2 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'hget' command"}
-// 	}
-
-// 	hash := args[0].bulk
-// 	key := args[1].bulk
-
-// 	HSETsMu.RLock()
-// 	value, ok := HSETs[hash][key]
-// 	HSETsMu.RUnlock()
-
-// 	if !ok {
-// 		return Value{typ: "null"}
-// 	}
-
-// 	return Value{typ: "bulk", bulk: value}
-// }
-
-// func hgetall(args []Value) Value {
-// 	if len(args) != 1 {
-// 		return Value{typ: "error", str: "ERR wrong number of arguments for 'hgetall' command"}
-// 	}
-
-// 	hash := args[0].bulk
-
-// 	HSETsMu.RLock()
-// 	defer HSETsMu.RUnlock()
-
-	
-// 	hmap, ok := HSETs[hash]
-// 	if !ok {
-// 		return Value{typ: "array", array: []Value{}}
-// 	}
-
-	
-// 	var result []Value
-// 	for field, val := range hmap {
-// 		result = append(result, Value{typ: "bulk", bulk: field})
-// 		result = append(result, Value{typ: "bulk", bulk: val})
-// 	}
-
-// 	return Value{typ: "array", array: result}
-// }
-
-
-// // func hget(args []Value) Value {
-// // 	if len(args) != 2 {
-// // 		return Value{typ: "error", str: "ERR wrong number of arguments for 'hget' command"}
-// // 	}
-
-// // 	hash := args[0].bulk
-// // 	key := args[1].bulk
-
-// // 	HSETsMu.RLock()
-// // 	value, ok := HSETs[hash][key]
-// // 	HSETsMu.RUnlock()
-
-// // 	if !ok {
-// // 		return Value{typ: "null"}
-// // 	}
-
-// // 	return Value{typ: "bulk", bulk: value}
-// // }
-
-// // func hgetall(args []Value) Value {
-// // 	if len(args) != 1 {
-// // 		return Value{typ: "error", str: "ERR wrong number of arguments for 'hgetall' command"}
-// // 	}
-
-// // 	hash := args[0].bulk
-
-// // 	HSETsMu.RLock()
-// // 	defer HSETsMu.RUnlock()
-
-// // 	hmap, ok := HSETs[hash]
-// // 	if !ok {
-// // 		return Value{typ: "array", array: []Value{}}
-// // 	}
-
-// // 	var result []Value
-// // 	for field, val := range hmap {
-// // 		result = append(result, Value{typ: "bulk", bulk: field})
-// // 		result = append(result, Value{typ: "bulk", bulk: val})
-// // 	}
-
-// // 	return Value{typ: "array", array: result}
-// // }
+
+//Exists command to check if a key exists
+func exists(args []Value) Value {
+    if len(args) != 1 {
+        return Value{typ: "error", str: "ERR wrong number of arguments for 'exists' command"}
+    }
+
+    key := args[0].bulk
+
+    SETsMu.RLock()
+    defer SETsMu.RUnlock()
+
+    _, ok := SETs[key]
+    if ok {
+        return Value{typ: "integer", integer: 1}
+    }
+
+    HSETsMu.RLock()
+    defer HSETsMu.RUnlock()
+
+	_, ok = HSETs[key]
+	if ok {
+		return Value{typ: "integer", integer: 1}
+	}
+
+    return Value{typ: "integer", integer: 0}
+}
+
+
+var TTLs = map[string]time.Time{}
+var TTLsMu = sync.RWMutex{}
+
+//TTL 
+func ttl(args []Value) Value {
+    if len(args) != 1 {
+        return Value{typ: "error", str: "ERR wrong number of arguments for 'ttl' command"}
+    }
+
+    key := args[0].bulk
+
+    TTLsMu.RLock()
+    defer TTLsMu.RUnlock()
+
+    expireAt, ok := TTLs[key]
+    if !ok {
+        return Value{typ: "integer", integer: -1} // -1 means no expire
+    }
+
+	remaining := int(time.Until(expireAt).Seconds())
+    if remaining < 0 {
+        return Value{typ: "integer", integer: -2} // -2 means expired
+    }
+
+    return Value{typ: "integer", integer: remaining}
+}
+
+//expiry
+func expire(args []Value) Value {
+    if len(args) != 2 {
+        return Value{typ: "error", str: "ERR wrong number of arguments for 'expire' command"}
+    }
+
+    key := args[0].bulk
+    seconds, err := strconv.Atoi(args[1].bulk)
+    if err != nil {
+        return Value{typ: "error", str: "ERR value is not an integer or out of range"}
+    }
+
+    TTLsMu.Lock()
+    defer TTLsMu.Unlock()
+
+    TTLs[key] = time.Now().Add(time.Duration(seconds) * time.Second)
+
+    return Value{typ: "integer", integer: 1}
+}
+
+//Increment
+func incr(args []Value) Value {
+    if len(args) != 1 {
+        return Value{typ: "error", str: "ERR wrong number of arguments for 'incr' command"}
+    }
+
+    key := args[0].bulk
+
+    SETsMu.Lock()
+    defer SETsMu.Unlock()
+
+    val, ok := SETs[key]
+    if !ok {
+        SETs[key] = "1"
+        return Value{typ: "integer", integer: 1}
+    }
+
+    intVal, err := strconv.Atoi(val)
+    if err != nil {
+        return Value{typ: "error", str: "ERR value is not an integer"}
+    }
+
+    intVal++
+    SETs[key] = strconv.Itoa(intVal)
+
+    return Value{typ: "integer", integer: intVal}
+}
+
+//del
+func del(args []Value) Value {
+    if len(args) < 1 {
+        return Value{typ: "error", str: "ERR wrong number of arguments for 'del' command"}
+    }
+
+    deleted := 0
+
+    SETsMu.Lock()
+    defer SETsMu.Unlock()
+
+    HSETsMu.Lock()
+    defer HSETsMu.Unlock()
+
+    for _, arg := range args {
+        key := arg.bulk
+
+        if _, ok := SETs[key]; ok {
+            delete(SETs, key)
+            deleted++
+        }
+
+        if _, ok := HSETs[key]; ok {
+            delete(HSETs, key)
+            deleted++
+        }
+
+        delete(TTLs, key)
+    }
+
+    return Value{typ: "integer", integer: deleted}
+}
+
+//hdel
+func hdel(args []Value) Value {
+    if len(args) < 2 {
+        return Value{typ: "error", str: "ERR wrong number of arguments for 'hdel' command"}
+    }
+
+    key := args[0].bulk
+
+    HSETsMu.Lock()
+    defer HSETsMu.Unlock()
+
+    hmap, ok := HSETs[key]
+    if !ok {
+        return Value{typ: "integer", integer: 0}
+    }
+
+    deleted := 0
+    for _, field := range args[1:] {
+        if _, ok := hmap[field.bulk]; ok {
+            delete(hmap, field.bulk)
+            deleted++
+        }
+    }
+
+    return Value{typ: "integer", integer: deleted}
+}
