@@ -5,18 +5,25 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, SendHorizontal } from "lucide-react";
 import Card from "../components/custom/card";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
 
 export default function Home() {
   const { movies, loading, error, fetchMovies } = useMoviesStore();
   const [query, setQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const handlePageChange = (page: number) => {
+    if (page < 1) return;
+    setCurrentPage(page);
+  };
 
   const handleSearch = async () => {
 
   }
 
   useEffect(() => {
-    fetchMovies();
-  }, [fetchMovies]);
+    fetchMovies(currentPage);
+  }, [fetchMovies, currentPage]);
 
   useEffect(() => {
     console.log('movies: ', movies);
@@ -62,6 +69,33 @@ export default function Home() {
               </div>
             ))}
           </div>
+          
+          {/* Pagination */}
+          <Pagination className="mt-6 justify-center text-white">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious href= "#" onClick={() => handlePageChange(currentPage - 1)} />
+              </PaginationItem>
+              
+              {[1, 2, 3, 4, 5].map((page) => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    // href={`?page=${page}`}
+                    href="#"
+                    isActive={page === currentPage}
+                    onClick={() => handlePageChange(page)}
+                    className={page === currentPage ? 'bg-white text-black' : ''}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+
+              <PaginationItem>
+                <PaginationNext href="#" onClick={() => handlePageChange(currentPage + 1)} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       </main>
     </div>

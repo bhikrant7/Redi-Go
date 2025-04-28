@@ -3,13 +3,22 @@ import { RedisClient } from '@/lib/redis'
 import connectMongo from '@/lib/mongodb';
 import Movie from '@/models/Movie'; // Import the Movie model
 
-export async function GET() {
-    console.log('GET');
-  const client = new RedisClient()
+export async function GET(req: Request) {
+  console.log('GET');
+
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = 20; // Set how many movies per page
+  const skip = (page - 1) * limit;
+
+  // const client = new RedisClient()
   try {
     const start = Date.now();
-    console.log('GET: /api/movies/cache');
-    const cacheKey = 'movies:page:1'
+
+    console.log(`GET: /api/movies/cache?page=${page}`);
+
+    // const cacheKey = `movies:page:${page}`;
+
     // 1️⃣ Try cache
     const cached = await client.get(cacheKey)
     if (cached) {
@@ -21,7 +30,7 @@ export async function GET() {
     // 2️⃣ Cache miss → fetch from MongoDB
     await connectMongo(); // Connect to MongoDB
 
-    const movies = await Movie.find(); // Fetch all movies from MongoDB
+    const movies = await Movie.find().skip(skip).limit(limit); ; // Add pagination
 
     if (!movies || movies.length === 0) {
       throw new Error('No movies found in the database');
