@@ -2,33 +2,84 @@
 import connectMongo from "@/lib/mongodb";
 import Movie from "@/models/Movie";
 import { NextResponse } from "next/server";
+import axios from "axios";
 
-const MOVIES_API = 'https://jsonfakery.com/movies/paginated?page=1';
+const MOVIES_API = process.env.MOVIES_API;
+const API_READ_ACCESS_TOKEN = process.env.API_READ_ACCESS_TOKEN;
 
 export async function GET() {
   // Connect to MongoDB
   await connectMongo();
 
+  if (!MOVIES_API) {
+    return NextResponse.json(
+      { error: 'MOVIES_API must be defined' },
+      { status: 500 }
+    );
+  }
+  if (!API_READ_ACCESS_TOKEN) {
+    return NextResponse.json(
+      { error: 'API_READ_ACCESS_TOKEN must be defined' },
+      { status: 500 }
+    );
+  }
+
   try {
     // Fetch movies from API
-    const res = await fetch(MOVIES_API);
-    const json = await res.json();
-    console.log('Fetched JSON response:', json);
+    const { data:data1 } = await axios.get(MOVIES_API || "", {
+      headers: {
+        Authorization: `Bearer ${API_READ_ACCESS_TOKEN}`
+      }
+    });
+
+    const { data: data2 } = await axios.get(`${MOVIES_API}?page=2`, {
+      headers: {
+        Authorization: `Bearer ${API_READ_ACCESS_TOKEN}`
+      }
+    });
+    
+    const { data: data3 } = await axios.get(`${MOVIES_API}?page=3`, {
+      headers: {
+        Authorization: `Bearer ${API_READ_ACCESS_TOKEN}`
+      }
+    });
+
+    const { data: data4 } = await axios.get(`${MOVIES_API}?page=4`, {
+      headers: {
+        Authorization: `Bearer ${API_READ_ACCESS_TOKEN}`
+      }
+    });
+
+    const { data: data5 } = await axios.get(`${MOVIES_API}?page=5`, {
+      headers: {
+        Authorization: `Bearer ${API_READ_ACCESS_TOKEN}`
+      }
+    });
+
+    let results: any = [
+      ...data1.results,
+      ...data2.results,
+      ...data3.results,
+      ...data4.results,
+      ...data5.results,
+    ];
+
+    console.log('results: ', results);
 
     // Check if the response contains the expected structure
-    if (!json || !json.data || !Array.isArray(json.data)) {
+    if (!results || !Array.isArray(results)) {
       throw new Error('Invalid API response format');
     }
 
-    const movies = json.data; // Assuming the movies are inside `data.data`
+    const movies = results; // Assuming the movies are inside `data.data`
     console.log('Movies data:', movies);
 
     // Filter out `created_at` and `updated_at` from the response and fix `adult` field
     const filteredMovies = movies.map((movie: any) => {
-      const { id, created_at, updated_at, ...filteredMovie } = movie; // Destructure to remove fields
+      const { id, genre_ids, created_at, updated_at, ...filteredMovie } = movie; // Destructure to remove fields
       return {
-        ...filteredMovie,
-        adult: filteredMovie.adult === 1, // Convert adult from number to boolean
+        ...filteredMovie, // Convert adult from number to boolean
+        movie_id: id
       };
     });
 

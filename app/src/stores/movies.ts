@@ -17,14 +17,23 @@ export const useMoviesStore = create<MoviesState>((set) => ({
   error: null,
 
   fetchMovies: async () => {
-    set({ loading: true, error: null })
+    set({ loading: true, error: null });
     try {
       console.log('fetchMovies');
-      const res = await fetch('/api/movies/cache')
-      const json = await res.json()
+      const res = await fetch('/api/movies/cache');
+      
+      // Check for successful response before parsing JSON
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData?.error || 'Failed to load movies');
+      }
+
+      const json = await res.json();
       console.log('json: ', json);
-      const data = json?.data?.map((movie: any) => {
-        return {
+
+      // Ensure json.data exists before mapping
+      if (json?.data) {
+        const data = json.data.map((movie: any) => ({
           id: movie._id,
           movieId: movie.movie_id,
           originalTitle: movie.original_title,
@@ -37,15 +46,13 @@ export const useMoviesStore = create<MoviesState>((set) => ({
           voteAverage: movie.vote_average,
           voteCount: movie.vote_count,
           adult: movie.adult
-        };
-      })
-      if (res.ok) {
-        set({ movies: data, loading: false })
+        }));
+        set({ movies: data, loading: false });
       } else {
-        set({ error: json.error || 'Failed to load movies', loading: false })
+        throw new Error('No movie data available');
       }
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.message, loading: false });
     }
   }
-}))
+}));
