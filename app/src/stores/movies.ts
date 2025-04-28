@@ -3,12 +3,13 @@
 // stores/movies.ts
 import { create } from 'zustand'
 import { Movie } from '@/types/movies';
+import axios from 'axios';
 
 type MoviesState = {
   movies: Movie[]
   loading: boolean
   error: string | null
-  fetchMovies: () => Promise<void>
+  fetchMovies: (page?: number) => Promise<void>
 }
 
 export const useMoviesStore = create<MoviesState>((set) => ({
@@ -16,24 +17,15 @@ export const useMoviesStore = create<MoviesState>((set) => ({
   loading: false,
   error: null,
 
-  fetchMovies: async () => {
+  fetchMovies: async (page = 1) => {
     set({ loading: true, error: null });
     try {
       console.log('fetchMovies');
-      const res = await fetch('/api/movies/cache');
-      
-      // Check for successful response before parsing JSON
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData?.error || 'Failed to load movies');
-      }
-
-      const json = await res.json();
-      console.log('json: ', json);
+      const { data } = await axios.get(`/api/movies/cache?page=${page}`);
 
       // Ensure json.data exists before mapping
-      if (json?.data) {
-        const data = json.data.map((movie: any) => ({
+      if (data) {
+        const movies = data?.data?.map((movie: any) => ({
           id: movie._id,
           movieId: movie.movie_id,
           originalTitle: movie.original_title,
@@ -47,7 +39,7 @@ export const useMoviesStore = create<MoviesState>((set) => ({
           voteCount: movie.vote_count,
           adult: movie.adult
         }));
-        set({ movies: data, loading: false });
+        set({ movies: movies, loading: false });
       } else {
         throw new Error('No movie data available');
       }
