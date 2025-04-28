@@ -3,8 +3,6 @@ import { RedisClient } from '@/lib/redis'
 import connectMongo from '@/lib/mongodb';
 import Movie from '@/models/Movie'; // Import the Movie model
 
-const MOVIES_API = 'https://jsonfakery.com/movies/paginated?page=1'
-
 export async function GET() {
     console.log('GET');
   const client = new RedisClient()
