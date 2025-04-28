@@ -56,7 +56,7 @@ export async function GET() {
       }
     });
 
-    let results: any = [
+    const results: any = [
       ...data1.results,
       ...data2.results,
       ...data3.results,
@@ -76,18 +76,32 @@ export async function GET() {
 
     // Filter out `created_at` and `updated_at` from the response and fix `adult` field
     const filteredMovies = movies.map((movie: any) => {
-      const { id, genre_ids, created_at, updated_at, ...filteredMovie } = movie; // Destructure to remove fields
-      return {
-        ...filteredMovie, // Convert adult from number to boolean
-        movie_id: id
-      };
+      const { id, poster_path, ...rest } = movie;
+      const newMovie = { ...rest, poster_path: `https://image.tmdb.org/t/p/original${poster_path}`, movie_id: id };
+    
+      // Remove unwanted fields
+      delete newMovie.genre_ids;
+      delete newMovie.created_at;
+      delete newMovie.updated_at;
+      return newMovie;
     });
 
     // Optional: clear old entries before seeding (can be skipped if you don't want to overwrite)
     await Movie.deleteMany({});
 
-    // Insert new movies into the database
-    const inserted = await Movie.insertMany(filteredMovies);
+    // Remove duplicates based on movie_id
+    const uniqueMoviesMap = new Map();
+
+    filteredMovies.forEach((movie: any) => {
+      if (!uniqueMoviesMap.has(movie.movie_id)) {
+        uniqueMoviesMap.set(movie.movie_id, movie);
+      }
+    });
+
+    const uniqueMovies = Array.from(uniqueMoviesMap.values());
+
+    // Now insert uniqueMovies into Mongo
+    const inserted = await Movie.insertMany(uniqueMovies);
 
     // Return a success message
     return NextResponse.json({
