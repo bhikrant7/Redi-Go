@@ -5,11 +5,14 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, SendHorizontal } from "lucide-react";
 import Card from "../components/custom/card";
-// import Image from 'next/image';
 
 export default function Home() {
   const { movies, loading, error, fetchMovies } = useMoviesStore();
   const [query, setQuery] = useState("");
+
+  const handleSearch = async () => {
+
+  }
 
   useEffect(() => {
     fetchMovies();
@@ -53,13 +56,6 @@ export default function Home() {
             {movies?.map((movie: any) => (
               <div key={movie.id} className="">
                 <Card movie={movie} />
-                {/* <Image
-                  src={movie.posterPath}
-                  alt={movie.originalTitle}
-                  className="w-full h-40 object-cover"
-                  width={200}
-                  height={300}
-                /> */}
                 <div className="text-white text-center mt-2">
                   {movie.originalTitle}
                 </div>

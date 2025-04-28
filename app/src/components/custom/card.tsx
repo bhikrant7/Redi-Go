@@ -1,7 +1,13 @@
 import React from "react";
 import styled from "styled-components";
 
-const Card = () => {
+interface CardProps {
+  movie: any
+}
+
+const Card = ({
+  movie
+}: CardProps) => {
 
   return (
     <StyledWrapper>
@@ -10,10 +16,13 @@ const Card = () => {
           {[...Array(25)].map((_, i) => (
             <div key={i} className={`tracker tr-${i + 1}`} />
           ))}
-          <div id="card">
+          <div id="card" style={{
+            backgroundImage: `url(${movie.posterPath})`,
+            backgroundSize: 'cover'
+          }}>
             {/* <p id="prompt">HOVER OVER :D</p> */}
             <div className="title">
-              look mom,
+              {movie.overview}
               <br />
               no JS
             </div>
@@ -60,8 +69,9 @@ const StyledWrapper = styled.div`
     transition: 300ms ease-in-out;
     transition-delay: 100ms;
     position: absolute;
-    font-size: x-large;
-    font-weight: bold;
+    font-size: x-small;
+    font-weight: normal;
+    padding: 0 30px;
     color: white;
   }
 
