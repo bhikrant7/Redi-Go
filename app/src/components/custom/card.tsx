@@ -1,3 +1,4 @@
+import { Movie } from "@/types/movies";
 import React from "react";
 import styled from "styled-components";
 
