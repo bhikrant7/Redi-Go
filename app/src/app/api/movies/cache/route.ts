@@ -1,54 +1,64 @@
 import { NextResponse } from 'next/server'
 import { RedisClient } from '@/lib/redis'
-import connectMongo from '@/lib/mongodb';
-import Movie from '@/models/Movie'; // Import the Movie model
+import connectMongo from '@/lib/mongodb'
+import Movie from '@/models/Movie'
 
 export async function GET(req: Request) {
-  console.log('GET');
+  console.log('GET')
 
-  const url = new URL(req.url);
-  const page = parseInt(url.searchParams.get('page') || '1');
-  const limit = 20; // Set how many movies per page
-  const skip = (page - 1) * limit;
+  const url = new URL(req.url)
+  const page = parseInt(url.searchParams.get('page') || '1')
+  const limit = 20
+  const skip = (page - 1) * limit
+  const cacheKey = `movies:page:${page}`
 
-  // const client = new RedisClient()
+  const client = new RedisClient()
+
   try {
-    const start = Date.now();
+    const start = Date.now()
+    console.log(`GET: /api/movies/cache?page=${page}`)
 
-    console.log(`GET: /api/movies/cache?page=${page}`);
-
-    // const cacheKey = `movies:page:${page}`;
-
-    // 1️⃣ Try cache
-    // const cached = await client.get(cacheKey)
-    // if (cached) {
-    //   console.log('cache hit');
-    //   console.log('cached: ', cached);
-    //   return NextResponse.json({ source: 'cache', data: JSON.parse(cached) })
-    // }
-
-    // 2️⃣ Cache miss → fetch from MongoDB
-    await connectMongo(); // Connect to MongoDB
-
-    const movies = await Movie.find().skip(skip).limit(limit); ; // Add pagination
-
-    if (!movies || movies.length === 0) {
-      throw new Error('No movies found in the database');
+    // 1️⃣ Try Redis cache
+    const cached = await client.get(cacheKey)
+    if (cached) {
+      console.log(' Cache HIT')
+      const duration = Date.now() - start
+      return NextResponse.json({ source: 'cache', duration, data: JSON.parse(cached) })
     }
 
-    const duration = Date.now() - start;
-    console.log('Movies fetched from MongoDB:', movies);
-    
-    // 3️⃣ Store in Redis (no TTL support yet)
-    // const resp = await client.set(cacheKey, JSON.stringify(movies));
-    // console.log('response of cache set: ', resp);
+    console.log(' Cache MISS')
 
-    return NextResponse.json({ source: 'api', duration, data: movies })
+    // 2️⃣ Fetch from MongoDB
+    await connectMongo()
+    const movies = await Movie.find().skip(skip).limit(limit).lean()
+
+    if (!movies || movies.length === 0) {
+      throw new Error('No movies found in the database')
+    }
+
+    // 3️⃣ Extract only required fields
+    const extractedMovies = movies.map(movie => ({
+      movie_id: movie.movie_id,
+      _id: movie._id,
+      original_title: movie.original_title,
+      original_language: movie.original_language,
+      popularity: movie.popularity,
+      poster_path: movie.poster_path,
+      overview: movie.overview,
+    }))
+
+    const duration = Date.now() - start
+    console.log(' Movies fetched from MongoDB')
+
+    // 4️⃣ Save to Redis 
+    const resp = await client.set(cacheKey, JSON.stringify(extractedMovies))
+    console.log('Redis SET result:', resp)
+
+    return NextResponse.json({ source: 'api', duration, data: extractedMovies })
   } catch (err: any) {
-    console.error('error: ', err);
+    console.error('Error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   } finally {
-    // console.log('quitting client');
-    // client.quit()
+    client.quit()
   }
 }
