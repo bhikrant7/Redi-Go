@@ -92,6 +92,7 @@ export default function Home() {
             </div>
           )}
           {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
+          {loading && <p className="text-white text-center mt-4">Loading...</p>}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10 mt-10">
             {moviesByPage?.map((movie: any) => (
