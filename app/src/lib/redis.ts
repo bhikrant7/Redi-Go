@@ -3,7 +3,7 @@ import net from 'net'
 
 type Command = {
   raw: string
-  resolve: (val: string | null | PromiseLike<string | null>) => void
+  resolve: (val: string | null) => void
   reject: (err: Error) => void
 }
 
@@ -72,6 +72,10 @@ export class RedisClient {
         this.isProcessing = false
         return
       }
+    } else if (line.startsWith(':')) {
+      // Handle integer responses
+      const val = parseInt(line.slice(1), 10)
+      cmd.resolve(val.toString())
     } else {
       cmd.reject(new Error('unexpected response: ' + line))
     }
@@ -81,18 +85,18 @@ export class RedisClient {
     setImmediate(() => this.processQueue())
   }
 
-  private async send(raw: string): Promise<string> {
+  private async send(raw: string): Promise<string | null> {
     if (!this.isConnected) {
       await new Promise((resolve) => this.socket.once('connect', resolve))
     }
 
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<string | null>((resolve, reject) => {
       this.commandQueue.push({ raw, resolve, reject })
       this.socket.write(raw)
     })
   }
 
-  async ping(): Promise<string> {
+  async ping(): Promise<string | null> {
     const resp = await this.send('*1\r\n$4\r\nPING\r\n')
     return resp
   }
