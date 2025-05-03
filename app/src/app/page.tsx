@@ -8,22 +8,43 @@ import Card from "../components/custom/card";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
 
 export default function Home() {
-  const { moviesByPage, loading, error, fetchMoviesByPage } = useMoviesStore();
+  const { moviesByPage, loading, error, fetchMoviesByPage, searchMovies, isSearching, searchQuery, source } = useMoviesStore();
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const handlePageChange = (page: number) => {
     if (page < 1) return;
     setCurrentPage(page);
+    if (isSearching) {
+      searchMovies(searchQuery, page);
+    } else {
+      fetchMoviesByPage(page);
+    }
   };
 
   const handleSearch = async () => {
+    if (query?.toLowerCase().trim() === "") {
+      // If search query is empty, reset to normal pagination
+      setCurrentPage(1);
+      fetchMoviesByPage(1);
+      return;
+    }
+    setCurrentPage(1);
+    searchMovies(query?.toLowerCase().trim(), 1);
+  };
 
-  }
+  // Handle Enter key press in search input
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   useEffect(() => {
-    fetchMoviesByPage(currentPage);
-  }, [fetchMoviesByPage, currentPage]);
+    if (!isSearching) {
+      fetchMoviesByPage(currentPage);
+    }
+  }, [fetchMoviesByPage, currentPage, isSearching]);
 
   useEffect(() => {
     console.log('moviesByPage: ', moviesByPage);
@@ -45,6 +66,7 @@ export default function Home() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="text-white px-24 py-8 w-full rounded-full bg-[#111014] placeholder-gray-400 border-none !text-2xl"
               placeholder="Search for a Movie"
             />
@@ -57,6 +79,18 @@ export default function Home() {
             </button>
           </div>
 
+          {source && (
+            <div className="mb-6 px-4 py-2 w-fit mx-auto rounded bg-black/30 text-white text-sm backdrop-blur-md border border-white/10 shadow-md">
+              🎬 Data loaded from:
+              <span
+                className={`ml-2 font-semibold ${
+                  source === "cache" ? "text-green-400" : "text-blue-400"
+                }`}
+              >
+                {source === "cache" ? "Redis Cache" : "MongoDB"}
+              </span>
+            </div>
+          )}
           {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10 mt-10">

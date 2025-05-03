@@ -10,9 +10,12 @@ type MoviesState = {
   loading: boolean;
   error: string | null;
   hasMore: boolean;
-  source: string; // <- Add this
+  source: string;
+  isSearching: boolean;
+  searchQuery: string;
   fetchMovies: (page?: number) => Promise<void>;
   fetchMoviesByPage: (page?: number) => Promise<void>;
+  searchMovies: (query: string, page?: number) => Promise<void>;
   resetMovies: () => void;
 };
 
@@ -23,6 +26,8 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
   error: null,
   hasMore: true,
   source: "",
+  isSearching: false,
+  searchQuery: "",
 
   fetchMovies: async (page = 1) => {
     const { movies } = get();
@@ -97,12 +102,42 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
           voteCount: movie.vote_count,
           adult: movie.adult
         }));
-        set({ moviesByPage: movies, loading: false });
+        set({ moviesByPage: movies, loading: false, source: data.source });
       } else {
         throw new Error('No movie data available');
       }
     } catch (err: any) {
-      set({ error: err.message, loading: false });
+      set({ error: err?.response?.data?.error, loading: false });
+    }
+  },
+
+  searchMovies: async (query: string, page = 1) => {
+    set({ loading: true, error: null, isSearching: true, searchQuery: query });
+    try {
+      console.log('searchMovies');
+      const { data } = await axios.get(`/api/movies/search?q=${query}&page=${page}`);
+
+      if (data) {
+        const movies = data?.data?.map((movie: any) => ({
+          id: movie._id,
+          movieId: movie.movie_id,
+          originalTitle: movie.original_title,
+          originalLanguage: movie.original_language,
+          overview: movie.overview,
+          popularity: movie.popularity,
+          posterPath: movie.poster_path,
+          backdropPath: movie.backdrop_path,
+          releaseDate: movie.release_date,
+          voteAverage: movie.vote_average,
+          voteCount: movie.vote_count,
+          adult: movie.adult
+        }));
+        set({ moviesByPage: movies, loading: false, source: data.source });
+      } else {
+        throw new Error('No movie data available');
+      }
+    } catch (err: any) {
+      set({ error: err?.response?.data?.error, loading: false });
     }
   },
 

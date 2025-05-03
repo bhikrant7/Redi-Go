@@ -112,6 +112,12 @@ export class RedisClient {
     return resp === 'OK'
   }
 
+  async expire(key: string, seconds: number): Promise<boolean> {
+    const cmd = `*3\r\n$6\r\nEXPIRE\r\n$${Buffer.byteLength(key)}\r\n${key}\r\n$${Buffer.byteLength(seconds.toString())}\r\n${seconds}\r\n`
+    const resp = await this.send(cmd)
+    return resp === '1'
+  }
+
   quit() {
     this.socket.end()
   }
