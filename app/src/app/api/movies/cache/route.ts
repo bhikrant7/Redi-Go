@@ -28,9 +28,14 @@ export async function GET(req: Request) {
 
     console.log(' Cache MISS')
 
-    // 2️⃣ Fetch from MongoDB
+    // 2️⃣ Fetch from MongoDB with optimized query
     await connectMongo()
-    const movies = await Movie.find().skip(skip).limit(limit).lean()
+    const movies = await Movie.find()
+      .sort({ _id: 1 }) // Add sorting for consistent pagination
+      .skip(skip)
+      .limit(limit)
+      .select('movie_id original_title original_language popularity poster_path overview') // Only select needed fields
+      .lean()
 
     if (!movies || movies.length === 0) {
       throw new Error('No movies found in the database')
