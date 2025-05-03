@@ -110,9 +110,29 @@ func (r *Resp) readArray() (Value, error) {
 	return v, nil
 }
 
+// func (r *Resp) readBulk() (Value, error) {
+// 	v := Value{}
+
+// 	v.typ = "bulk"
+
+// 	len, _, err := r.readInteger()
+// 	if err != nil {
+// 		return v, err
+// 	}
+
+// 	bulk := make([]byte, len)
+
+// 	r.reader.Read(bulk)
+
+// 	v.bulk = string(bulk)
+
+// 	// Read the trailing CRLF
+// 	r.readLine()
+
+// 	return v, nil
+// }
 func (r *Resp) readBulk() (Value, error) {
 	v := Value{}
-
 	v.typ = "bulk"
 
 	len, _, err := r.readInteger()
@@ -120,17 +140,28 @@ func (r *Resp) readBulk() (Value, error) {
 		return v, err
 	}
 
-	bulk := make([]byte, len)
+	if len == -1 {
+		v.typ = "null"
+		return v, nil
+	}
 
-	r.reader.Read(bulk)
+	bulk := make([]byte, len)
+	_, err = io.ReadFull(r.reader, bulk)
+	if err != nil {
+		return v, err
+	}
 
 	v.bulk = string(bulk)
 
 	// Read the trailing CRLF
-	r.readLine()
+	_, _, err = r.readLine()
+	if err != nil {
+		return v, err
+	}
 
 	return v, nil
 }
+
 
 //Conversion Resp into value objects
 func (v Value) Marshal() []byte {
