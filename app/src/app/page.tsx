@@ -17,8 +17,6 @@ export default function Home() {
     setCurrentPage(page);
     if (isSearching) {
       searchMovies(searchQuery, page);
-    } else {
-      fetchMoviesByPage(page);
     }
   };
 
