@@ -76,7 +76,7 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
         source: responseSource, 
       });
     } catch (err: any) {
-      set({ error: err.message, loading: false });
+      set({ error: err?.response?.data?.error, loading: false });
     }
   },
 
