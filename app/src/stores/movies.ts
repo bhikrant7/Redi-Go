@@ -6,16 +6,19 @@ import axios from "axios";
 
 type MoviesState = {
   movies: Movie[];
+  moviesByPage: Movie[];
   loading: boolean;
   error: string | null;
   hasMore: boolean;
   source: string; // <- Add this
   fetchMovies: (page?: number) => Promise<void>;
+  fetchMoviesByPage: (page?: number) => Promise<void>;
   resetMovies: () => void;
 };
 
 export const useMoviesStore = create<MoviesState>((set, get) => ({
   movies: [],
+  moviesByPage: [],
   loading: false,
   error: null,
   hasMore: true,
@@ -67,6 +70,37 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
         hasMore: true,
         source: responseSource, 
       });
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+    }
+  },
+
+  fetchMoviesByPage: async (page = 1) => {
+    set({ loading: true, error: null });
+    try {
+      console.log('fetchMovies');
+      const { data } = await axios.get(`/api/movies/cache?page=${page}`);
+
+      // Ensure json.data exists before mapping
+      if (data) {
+        const movies = data?.data?.map((movie: any) => ({
+          id: movie._id,
+          movieId: movie.movie_id,
+          originalTitle: movie.original_title,
+          originalLanguage: movie.original_language,
+          overview: movie.overview,
+          popularity: movie.popularity,
+          posterPath: movie.poster_path,
+          backdropPath: movie.backdrop_path,
+          releaseDate: movie.release_date,
+          voteAverage: movie.vote_average,
+          voteCount: movie.vote_count,
+          adult: movie.adult
+        }));
+        set({ moviesByPage: movies, loading: false });
+      } else {
+        throw new Error('No movie data available');
+      }
     } catch (err: any) {
       set({ error: err.message, loading: false });
     }

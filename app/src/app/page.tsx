@@ -8,7 +8,7 @@ import Card from "../components/custom/card";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
 
 export default function Home() {
-  const { movies, loading, error, fetchMovies } = useMoviesStore();
+  const { moviesByPage, loading, error, fetchMoviesByPage } = useMoviesStore();
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -22,12 +22,12 @@ export default function Home() {
   }
 
   useEffect(() => {
-    fetchMovies(currentPage);
-  }, [fetchMovies, currentPage]);
+    fetchMoviesByPage(currentPage);
+  }, [fetchMoviesByPage, currentPage]);
 
   useEffect(() => {
-    console.log('movies: ', movies);
-  }, [movies]);
+    console.log('moviesByPage: ', moviesByPage);
+  }, [moviesByPage]);
 
   return (
     <div className="min-h-screen font-geist-sans bg-gradient-to-b from-[#100719] to-[#1c1a3f] bg-fixed bg-no-repeat bg-cover flex items-center justify-center px-4">
@@ -60,7 +60,7 @@ export default function Home() {
           {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10 mt-10">
-            {movies?.map((movie: any) => (
+            {moviesByPage?.map((movie: any) => (
               <div key={movie.id} className="">
                 <Card movie={movie} />
                 <div className="text-white text-center mt-2">
