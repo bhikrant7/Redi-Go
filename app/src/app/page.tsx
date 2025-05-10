@@ -8,7 +8,7 @@ import Card from "../components/custom/card";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
 
 export default function Home() {
-  const { moviesByPage, loading, error, fetchMoviesByPage, searchMovies, isSearching, searchQuery, source } = useMoviesStore();
+  const { moviesByPage, loading, error, fetchMoviesByPage, searchMovies, isSearching, searchQuery, source, fetchMoviesDirect } = useMoviesStore();
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -89,6 +89,17 @@ export default function Home() {
               </span>
             </div>
           )}
+
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={() => fetchMoviesDirect(currentPage)}
+              disabled={loading}
+              className="px-6 py-2 rounded-full bg-purple-500 hover:bg-purple-600 active:bg-purple-400 text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Fetch Directly from MongoDB
+            </button>
+          </div>
+
           {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
           {loading && <p className="text-white text-center mt-4">Loading...</p>}
 

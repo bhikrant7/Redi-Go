@@ -16,6 +16,7 @@ type MoviesState = {
   fetchMovies: (page?: number) => Promise<void>;
   fetchMoviesByPage: (page?: number) => Promise<void>;
   searchMovies: (query: string, page?: number) => Promise<void>;
+  fetchMoviesDirect: (page?: number) => Promise<void>;
   resetMovies: () => void;
 };
 
@@ -116,6 +117,36 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
     try {
       console.log('searchMovies');
       const { data } = await axios.get(`/api/movies/search?q=${query}&page=${page}`);
+
+      if (data) {
+        const movies = data?.data?.map((movie: any) => ({
+          id: movie._id,
+          movieId: movie.movie_id,
+          originalTitle: movie.original_title,
+          originalLanguage: movie.original_language,
+          overview: movie.overview,
+          popularity: movie.popularity,
+          posterPath: movie.poster_path,
+          backdropPath: movie.backdrop_path,
+          releaseDate: movie.release_date,
+          voteAverage: movie.vote_average,
+          voteCount: movie.vote_count,
+          adult: movie.adult
+        }));
+        set({ moviesByPage: movies, loading: false, source: data.source });
+      } else {
+        throw new Error('No movie data available');
+      }
+    } catch (err: any) {
+      set({ error: err?.response?.data?.error, loading: false });
+    }
+  },
+
+  fetchMoviesDirect: async (page = 1) => {
+    set({ loading: true, error: null });
+    try {
+      console.log('fetchMoviesDirect');
+      const { data } = await axios.get(`/api/movies/direct?page=${page}`);
 
       if (data) {
         const movies = data?.data?.map((movie: any) => ({
