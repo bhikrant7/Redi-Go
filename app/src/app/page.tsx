@@ -8,7 +8,7 @@ import Card from "../components/custom/card";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
 
 export default function Home() {
-  const { moviesByPage, loading, error, fetchMoviesByPage, searchMovies, isSearching, searchQuery, source, fetchMoviesDirect } = useMoviesStore();
+  const { moviesByPage, loading, error, fetchMoviesByPage, searchMovies, isSearching, searchQuery, source, duration, fetchMoviesDirect } = useMoviesStore();
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -78,15 +78,24 @@ export default function Home() {
           </div>
 
           {source && (
-            <div className="mb-6 px-4 py-2 w-fit mx-auto rounded bg-black/30 text-white text-sm backdrop-blur-md border border-white/10 shadow-md">
-              🎬 Data loaded from:
-              <span
-                className={`ml-2 font-semibold ${
-                  source === "cache" ? "text-green-400" : "text-blue-400"
-                }`}
-              >
-                {source === "cache" ? "Redis Cache" : "MongoDB"}
-              </span>
+            <div className="mb-6 px-4 py-2 w-fit mx-auto rounded bg-black/30 text-white text-sm backdrop-blur-md border border-white/10 shadow-md flex items-center gap-4">
+              <div>
+                🎬 Data loaded from:
+                <span
+                  className={`ml-2 font-semibold ${
+                    source === "cache" ? "text-green-400" : "text-blue-400"
+                  }`}
+                >
+                  {source === "cache" ? "Redis Cache" : "MongoDB"}
+                </span>
+              </div>
+              <div className="h-4 w-px bg-white/20"></div>
+              <div>
+                ⚡ Fetch time:
+                <span className="ml-2 font-semibold text-yellow-400">
+                  {duration}ms
+                </span>
+              </div>
             </div>
           )}
 

@@ -11,6 +11,7 @@ type MoviesState = {
   error: string | null;
   hasMore: boolean;
   source: string;
+  duration: number;
   isSearching: boolean;
   searchQuery: string;
   fetchMovies: (page?: number) => Promise<void>;
@@ -27,6 +28,7 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
   error: null,
   hasMore: true,
   source: "",
+  duration: 0,
   isSearching: false,
   searchQuery: "",
 
@@ -40,6 +42,7 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
 
       // Expecting `data.source` to be either "cache" or "mongo"
       const responseSource = data?.source ?? "";
+      const responseDuration = data?.duration ?? 0;
 
       const newMovies = data?.data?.map((movie: any) => ({
         id: movie._id,
@@ -74,7 +77,8 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
         movies: allMovies,
         loading: false,
         hasMore: true,
-        source: responseSource, 
+        source: responseSource,
+        duration: responseDuration,
       });
     } catch (err: any) {
       set({ error: err?.response?.data?.error, loading: false });
@@ -103,7 +107,12 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
           voteCount: movie.vote_count,
           adult: movie.adult
         }));
-        set({ moviesByPage: movies, loading: false, source: data.source });
+        set({ 
+          moviesByPage: movies, 
+          loading: false, 
+          source: data.source,
+          duration: data.duration 
+        });
       } else {
         throw new Error('No movie data available');
       }
@@ -133,7 +142,12 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
           voteCount: movie.vote_count,
           adult: movie.adult
         }));
-        set({ moviesByPage: movies, loading: false, source: data.source });
+        set({ 
+          moviesByPage: movies, 
+          loading: false, 
+          source: data.source,
+          duration: data.duration 
+        });
       } else {
         throw new Error('No movie data available');
       }
@@ -163,7 +177,12 @@ export const useMoviesStore = create<MoviesState>((set, get) => ({
           voteCount: movie.vote_count,
           adult: movie.adult
         }));
-        set({ moviesByPage: movies, loading: false, source: data.source });
+        set({ 
+          moviesByPage: movies, 
+          loading: false, 
+          source: data.source,
+          duration: data.duration 
+        });
       } else {
         throw new Error('No movie data available');
       }
