@@ -4,19 +4,19 @@ import connectMongo from '@/lib/mongodb'
 import Movie from '@/models/Movie'
 
 export async function GET(req: Request) {
-  console.log('GET')
-
   const url = new URL(req.url)
+  const query = url.searchParams.get('q') || ''
   const page = parseInt(url.searchParams.get('page') || '1')
   const limit = 20
   const skip = (page - 1) * limit
-  const cacheKey = `movies:page:${page}`
+  const cacheKey = `movies:search:${query}:${page}`
+  const ttl = 300 // 5 minutes TTL
 
   const client = new RedisClient()
 
   try {
     const start = Date.now()
-    console.log(`GET: /api/movies/cache?page=${page}`)
+    console.log(`GET: /api/movies/search?q=${query}&page=${page}`)
 
     // 1️⃣ Try Redis cache
     const cached = await client.get(cacheKey)
@@ -28,17 +28,17 @@ export async function GET(req: Request) {
 
     console.log(' Cache MISS')
 
-    // 2️⃣ Fetch from MongoDB with optimized query
+    // 2️⃣ Fetch from MongoDB using regex search
     await connectMongo()
-    const movies = await Movie.find()
-      .sort({ _id: 1 }) // Add sorting for consistent pagination
-      .skip(skip)
-      .limit(limit)
-      .select('movie_id original_title original_language popularity poster_path overview') // Only select needed fields
-      .lean()
+    const movies = await Movie.find({
+      original_title: { $regex: query, $options: 'i' }
+    })
+    .skip(skip)
+    .limit(limit)
+    .lean()
 
     if (!movies || movies.length === 0) {
-      throw new Error('No movies found in the database')
+      throw new Error('No movies found matching the search query')
     }
 
     // 3️⃣ Extract only required fields
@@ -55,8 +55,10 @@ export async function GET(req: Request) {
     const duration = Date.now() - start
     console.log(' Movies fetched from MongoDB')
 
-    // 4️⃣ Save to Redis 
+    // 4️⃣ Save to Redis with TTL
     const resp = await client.set(cacheKey, JSON.stringify(extractedMovies))
+    // Set TTL using expire method
+    await client.expire(cacheKey, ttl)
     console.log('Redis SET result:', resp)
 
     return NextResponse.json({ source: 'api', duration, data: extractedMovies })
@@ -66,4 +68,4 @@ export async function GET(req: Request) {
   } finally {
     client.quit()
   }
-}
+} 
