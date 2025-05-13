@@ -99,7 +99,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center my-6">
             <button
               onClick={() => fetchMoviesDirect(currentPage)}
               disabled={loading}
