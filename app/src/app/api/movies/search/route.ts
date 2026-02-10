@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     const start = Date.now()
     console.log(`GET: /api/movies/search?q=${query}&page=${page}`)
 
-    // 1️⃣ Try Redis cache
+    // Try Redis cache
     const cached = await client.get(cacheKey)
     if (cached) {
       console.log(' Cache HIT')
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 
     console.log(' Cache MISS')
 
-    // 2️⃣ Fetch from MongoDB using regex search
+    // Fetch from MongoDB using regex search
     await connectMongo()
     const movies = await Movie.find({
       original_title: { $regex: query, $options: 'i' }
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
       throw new Error('No movies found matching the search query')
     }
 
-    // 3️⃣ Extract only required fields
+    // Extract only required fields
     const extractedMovies = movies.map(movie => ({
       movie_id: movie.movie_id,
       _id: movie._id,
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     const duration = Date.now() - start
     console.log(' Movies fetched from MongoDB')
 
-    // 4️⃣ Save to Redis with TTL
+    // Save to Redis with TTL
     const resp = await client.set(cacheKey, JSON.stringify(extractedMovies))
     // Set TTL using expire method
     await client.expire(cacheKey, ttl)

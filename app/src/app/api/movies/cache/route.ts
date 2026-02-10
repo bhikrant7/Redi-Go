@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     const start = Date.now()
     console.log(`GET: /api/movies/cache?page=${page}`)
 
-    // 1️⃣ Try Redis cache
+    //  Try Redis cache
     const cached = await client.get(cacheKey)
     if (cached) {
       console.log(' Cache HIT')
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 
     console.log(' Cache MISS')
 
-    // 2️⃣ Fetch from MongoDB with optimized query
+    //  Fetch from MongoDB with optimized query
     await connectMongo()
     const movies = await Movie.find()
       .sort({ _id: 1 }) // Add sorting for consistent pagination
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
       throw new Error('No movies found in the database')
     }
 
-    // 3️⃣ Extract only required fields
+    //  Extract only required fields
     const extractedMovies = movies.map(movie => ({
       movie_id: movie.movie_id,
       _id: movie._id,
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     const duration = Date.now() - start
     console.log(' Movies fetched from MongoDB')
 
-    // 4️⃣ Save to Redis 
+    //  Save to Redis 
     const resp = await client.set(cacheKey, JSON.stringify(extractedMovies))
     console.log('Redis SET result:', resp)
 
