@@ -73,7 +73,7 @@ graph TD
 
     subgraph Redi-Go Internal Core
         RediGo <-->|In-Memory Reads/Writes| Store["Concurrency-Safe Store (Go Maps)"]
-        RediGo -->|Async Sync (1s)| AOF["database.aof (Append Only File)"]
+        RediGo -->|Async Sync 1s| AOF["database.aof (Append Only File)"]
         AOF -->|Replay on Startup| Store
     end
 
@@ -94,18 +94,18 @@ When a client transmits a command, Redi-Go processes the socket connections conc
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Client as Next.js Client
-    participant Listener as TCP Listener (:6379)
-    participant Worker as Goroutine (handleConnection)
-    participant RESP as RESP Reader/Writer
-    participant Store as In-Memory Store
-    participant Mutex as sync.RWMutex
-    participant AOF as AOF Durability Layer
+    actor Client as "Next.js Client"
+    participant Listener as "TCP Listener (:6379)"
+    participant Worker as "Goroutine (handleConnection)"
+    participant RESP as "RESP Reader/Writer"
+    participant Store as "In-Memory Store"
+    participant Mutex as "sync.RWMutex"
+    participant AOF as "AOF Durability Layer"
 
     Client->>Listener: Connect
     Listener->>Worker: Spawn Go Routine
     loop Connection Session
-        Client->>RESP: Send Raw RESP bytes (e.g. *3\r\n$3\r\nSET\r\n...)
+        Client->>RESP: "Send Raw RESP bytes (e.g. *3\r\n$3\r\nSET\r\n...)"
         RESP->>Worker: Parse into Value struct
         alt Mutating Command (SET/HSET)
             Worker->>AOF: Write raw command to database.aof
@@ -116,7 +116,7 @@ sequenceDiagram
         Store-->>Worker: Return result Value struct
         Worker->>Mutex: Unlock Store
         Worker->>RESP: Marshal and Write Response
-        RESP-->>Client: Raw RESP response bytes (e.g. +OK\r\n)
+        RESP-->>Client: "Raw RESP response bytes (e.g. +OK\r\n)"
     end
     Note over AOF: Every 1 second, background goroutine calls aof.file.Sync()
 ```
