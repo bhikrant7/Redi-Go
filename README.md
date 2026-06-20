@@ -133,9 +133,9 @@ To show the efficiency of in-memory caching, the benchmark compares direct datab
 
 https://github.com/user-attachments/assets/demo-placeholder
 
-<div align="center">
-  <video src="Demo.mp4" width="100%" controls></video>
-</div>
+![Performance Cache Demo](Demo.mp4)
+
+> 📁 **[Click here to watch the Demo Video directly](./Demo.mp4)** *(Fallback for local markdown previewers)*
 
 ---
 
