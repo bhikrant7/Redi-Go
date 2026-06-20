@@ -131,11 +131,12 @@ To show the efficiency of in-memory caching, the benchmark compares direct datab
 - **Direct MongoDB Query**: **~200–300 ms** response latency (requires round-trips, indexes, query parsing, and disk read operations).
 - **Redi-Go Cache Hit**: **~1–3 ms** response latency (served directly from concurrent-safe RAM maps).
 
-https://github.com/user-attachments/assets/demo-placeholder
+<div align="center">
+  <!-- Replace the src URL below with your uploaded GitHub user-attachments link once uploaded -->
+  <video src="https://github.com/user-attachments/assets/demo-placeholder" width="100%" controls></video>
+</div>
 
-![Performance Cache Demo](Demo.mp4)
-
-> 📁 **[Click here to watch the Demo Video directly](./Demo.mp4)** *(Fallback for local markdown previewers)*
+> 📁 **[Click here to watch the Demo Video directly](./Demo.mp4)** *(Fallback to play the local file directly)*
 
 ---
 
