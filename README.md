@@ -134,8 +134,8 @@ To show the efficiency of in-memory caching, the benchmark compares direct datab
 https://github.com/user-attachments/assets/demo-placeholder
 
 <div align="center">
-  <video src="./Demo.mkv" controls width="100%" style="border-radius: 8px; border: 1px solid #444; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-    Your browser does not support the video tag. You can view the demo video here: <a href="./Demo.mkv">Demo.mkv</a>
+  <video src="./Demo.mp4" controls width="100%" style="border-radius: 8px; border: 1px solid #444; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    Your browser does not support the video tag. You can view the demo video here: <a href="./Demo.mp4">Demo.mp4</a>
   </video>
 </div>
 
@@ -235,7 +235,7 @@ Redi-Go implements the following core commands:
 │   │   └── stores/  # State management for benchmarks
 │   ├── package.json
 │   └── .env.local   # App config env values
-├── Demo.mkv         # High-resolution cache performance demo video
+├── Demo.mp4         # High-resolution cache performance demo video
 └── README.md        # Documentation
 ```
 
